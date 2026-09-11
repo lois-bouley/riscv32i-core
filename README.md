@@ -1,4 +1,4 @@
-# 🚀 3-Stage Pipelined RISC-V Core (RV32I)
+# 3-Stage Pipelined RISC-V Core (RV32I)
 
 ## 📖 Overview
 
