@@ -1,98 +1,76 @@
 # 3-Stage Pipelined RISC-V Core (RV32I)
 
-## 📖 Overview
+A 32-bit RISC-V processor (RV32I) written in Chisel, synthesised with Vivado and running on a Digilent Zybo Z7-10 board (Xilinx Zynq-7000 SoC). The core runs a Space Invaders game written in C in real time, with VGA output.
 
-This project involves the design and implementation of a 32-bit RISC-V processor (RV32I subset) using Chisel (Hardware Construction Language). The processor features a 3-stage pipeline (Fetch, Decode/Execute, WriteBack) and handles data hazards via a dedicated forwarding unit.
+Built as part of the course "Fondements matériels du numérique" (digital hardware foundations) at Ensimag, Grenoble INP.
 
-The core was synthesized and successfully deployed on a Digilent Zybo FPGA to run interactive applications like Space Invaders and LED animations.
+## Architecture
 
+![Microarchitecture diagram](docs/schema.jpg)
 
-## 🏗 Architecture
+- **ISA**: RV32I (base integer instruction set)
+- **Pipeline**: 3 stages, matched to the one-cycle read latency of the FPGA block RAM
+  1. **Fetch**: instruction read from instruction memory
+  2. **Decode / Execute / Memory**: register file read, ALU, branch resolution, memory request for loads and stores
+  3. **Write-back**: load data formatting and register file write
+- **Data hazards**: a forwarding unit sends the value being written back directly to the ALU inputs, so read-after-write hazards are resolved without stalls, including right after a load
+- **Control hazards**: static branch prediction (assumed not taken); when a branch or jump is taken, the instruction fetched behind it is flushed
+- **Memory**: dual-port block RAM, with separate ports for instructions and data
 
-![](docs/schema.jpg)
+## Tools
 
-The processor implements the classic RISC-V Von Neumann architecture with the following features:
+- Scala 2.13 / Chisel 3, built with Mill
+- Verilator and GTKWave for simulation
+- Xilinx Vivado 2019.1 for synthesis and place and route
+- Digilent Zybo Z7-10 (Xilinx Zynq-7000 SoC)
 
--   **ISA**: RV32I (Base Integer Instruction Set).
--   **Pipeline**: 3 Stages to optimize throughput given BRAM latency constraints.
-    1.  **Fetch**: Instruction retrieval from IMEM.
-    2.  **Decode / Execute**: Register File access, ALU operations, Branch resolution.
-    3.  **Write Back**: Memory access (Load/Store) and Register Write-back.
--   **Hazard Management**: Full Data Forwarding (Bypassing) logic to resolve Read-After-Write (RAW) hazards without stalling (removing NOPs).
--   **Control Hazards**: Branch prediction assumes "not taken", with pipeline flush on branch taken.
--   **Memory**: Harvard-style logical separation (IMEM/DMEM) mapped to Dual-Port BRAM.
+## Demo
 
+### Space Invaders on the FPGA
 
-## 🛠️ Tech Stack
+![Space Invaders running on the board](docs/invaders.gif)
 
--   **Language**: Scala 2.13 / Chisel 3
--   **Build Tool**: Mill
--   **Simulation**: Verilator / GTKWave
--   **Synthesis & P&R**: Xilinx Vivado 2019.1
--   **Hardware**: Digilent Zybo Z7-10 - Xilinx Zynq-7000 ARM/FPGA SoC development board
+### Simulation waveforms
 
+![GTKWave waveforms](docs/gtkwave.png)
 
-## 📸 Demo
+Pipeline, hazard resolution and a taken conditional branch (`beq`).
 
-### FPGA Implementation (Space Invaders)
-
-![](docs/invaders.gif)
-
-### Simulation Waveforms
-
-![](docs/gtkwave.png)
-
-*Figure: Waveform showing the instruction pipeline, hazard resolution, and a taken conditional branch (`beq`)*
-
-
-## 🚀 How to Run
+## Running it
 
 ### Simulation
 
-All test files are located in the `bench/` directory and are written in **RISC-V assembly**.
+Tests are RISC-V assembly programs in `bench/`. Each one lists the values expected in register x31, and the test harness checks every write to x31 against them.
 
-**Run all unit tests:**
+Run all tests:
 
-``` bash
-# Run unit tests
+```bash
 make autotest
 ```
 
-*Expected output:*
+![Test output](docs/autotest_output.png)
 
-![](docs/autotest_output.png)
+Run one test:
 
-**Run a specific unit test (e.g. instr_jalr.s):**
-
-``` bash
+```bash
 make autotest PROG=instr_jalr
 ```
 
-**Run simulation for GTKWave visualization:**
+Run a simulation without checking results, to inspect the waveforms in GTKWave:
 
-``` bash
-# This runs the simulation without checking results automatically,
-# allowing you to inspect waveforms in GTKWave even if the test logic isn't fully implemented.
+```bash
 make simulation PROG=instr_jalr
 ```
 
+### FPGA
 
-### FPGA Deployment
-
-``` bash
-# Generate Bitstream and Program the Board
+```bash
 make fpga PROG=invaders
 ```
 
-*Action: After synthesis (which may take a few minutes), the bitstream is uploaded to the Zybo board. The application (e.g., Space Invaders) starts running immediately on the connected VGA display / LEDs.*
+Synthesis takes a few minutes, then the bitstream is loaded onto the Zybo board and the program starts on the VGA display and LEDs.
 
+## Authors
 
-## 👥 Contributors
-This project was developed in collaboration by:
-* **Loïs Bouley** - [LinkedIn](https://www.linkedin.com/in/lo%C3%AFs-bouley-0b0276385/)
-* **Marwa El Khazrouni** - [LinkedIn](https://www.linkedin.com/in/marwa-el-khazrouni-a6a47727b/)
-
-
-## 🎓 Context
-
-This project was realized as part of the "Fondements Matériels du Numérique" (Digital Hardware Foundations) curriculum at Ensimag (Grenoble INP), National School of Computer Science and Applied Mathematics.
+- Loïs Bouley ([LinkedIn](https://www.linkedin.com/in/lois-bouley))
+- Marwa El Khazrouni ([LinkedIn](https://www.linkedin.com/in/marwa-el-khazrouni/))
